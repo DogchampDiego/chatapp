@@ -1,122 +1,186 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebase_config.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await FirebaseConfig.initializeFirebase();
+    // Try to sign in anonymously, but continue even if it fails
+    await FirebaseConfig.signInAnonymously();
+  } catch (e) {
+    print('Startup error: $e');
+    // Continue with app startup even if there's an error
+  }
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Firebase Chat App',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const RealtimeDatabaseInputPage(title: 'Realtime Database Chat'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
+class RealtimeDatabaseInputPage extends StatefulWidget {
+  const RealtimeDatabaseInputPage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<RealtimeDatabaseInputPage> createState() =>
+      _RealtimeDatabaseInputPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _RealtimeDatabaseInputPageState extends State<RealtimeDatabaseInputPage> {
+  final TextEditingController _textController = TextEditingController();
+  late final DatabaseReference _messagesRef;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the database reference in initState
+    _messagesRef = FirebaseDatabase.instance.ref('messages');
+  }
+
+  void _saveToDatabase() async {
+    if (_textController.text.isNotEmpty) {
+      try {
+        // Check if user is authenticated
+        if (_auth.currentUser == null) {
+          // If not authenticated, try to sign in anonymously
+          final user = await FirebaseConfig.signInAnonymously();
+          if (user == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Failed to authenticate. Please try again.'),
+              ),
+            );
+            return;
+          }
+        }
+
+        // Create a new message entry with a unique key
+        final newMessageRef = _messagesRef.push();
+        await newMessageRef.set({
+          'text': _textController.text,
+          'timestamp': ServerValue.timestamp,
+          'userId': _auth.currentUser?.uid ?? 'unknown',
+        });
+
+        _textController.clear();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Message saved to Realtime Database')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+        actions: [
+          // Show sign-in status
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: StreamBuilder<User?>(
+              stream: _auth.authStateChanges(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return const Icon(Icons.verified_user, color: Colors.green);
+                } else {
+                  return const Icon(Icons.no_accounts, color: Colors.red);
+                }
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: TextField(
+              controller: _textController,
+              decoration: InputDecoration(
+                labelText: 'Enter message',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _saveToDatabase,
+                ),
+              ),
+              onSubmitted: (_) => _saveToDatabase(),
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder(
+              stream: _messagesRef.orderByChild('timestamp').onValue,
+              builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (!snapshot.hasData ||
+                    snapshot.data?.snapshot.value == null) {
+                  return const Center(child: Text('No messages yet'));
+                }
+
+                // Convert the data to a usable format
+                Map<dynamic, dynamic> messagesMap = Map<dynamic, dynamic>.from(
+                  snapshot.data!.snapshot.value as Map,
+                );
+
+                // Convert to list and sort by timestamp (newest first)
+                List<MapEntry<dynamic, dynamic>> messagesList =
+                    messagesMap.entries.toList();
+                messagesList.sort(
+                  (a, b) => (b.value['timestamp'] ?? 0).compareTo(
+                    a.value['timestamp'] ?? 0,
+                  ),
+                );
+
+                return ListView.builder(
+                  itemCount: messagesList.length,
+                  itemBuilder: (context, index) {
+                    final message = messagesList[index].value;
+                    final userId = message['userId'] ?? 'Unknown';
+                    final isCurrentUser = userId == _auth.currentUser?.uid;
+
+                    return ListTile(
+                      title: Text(message['text'] ?? 'No text'),
+                      subtitle: Text('User: ${userId.substring(0, 6)}...'),
+                      tileColor:
+                          isCurrentUser ? Colors.blue.withOpacity(0.1) : null,
+                      trailing: isCurrentUser ? const Icon(Icons.person) : null,
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

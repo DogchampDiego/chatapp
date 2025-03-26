@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "457835886375",
+    "firebase_url": "https://chatapp-6539d-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "chatapp-6539d",
+    "storage_bucket": "chatapp-6539d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457835886375:android:162beac296604b908e9b02",
+        "android_client_info": {
+          "package_name": "com.example.chat_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAA9EAxrRZ2M_uMQDHA55TaTxOLMZuKOCQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
