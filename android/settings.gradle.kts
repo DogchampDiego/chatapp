@@ -27,8 +27,8 @@ pluginManagement {
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") version "8.2.0" apply false
-    // Update to a newer Kotlin version compatible with Firebase
-    id("org.jetbrains.kotlin.android") version "1.9.22" apply false
+    // Update to Kotlin 2.0.0 to match Firebase dependencies
+    id("org.jetbrains.kotlin.android") version "2.0.0" apply false
 }
 
 include(":app")

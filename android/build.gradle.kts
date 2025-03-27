@@ -1,6 +1,6 @@
 buildscript {
-    // Update Kotlin version here as well
-    extra["kotlin_version"] = "1.9.22"
+    // Update Kotlin version to 2.0.0 to match Firebase requirements
+    extra["kotlin_version"] = "2.0.0"
     
     repositories {
         google()
@@ -10,7 +10,7 @@ buildscript {
     dependencies {
         classpath("com.google.gms:google-services:4.4.2")
         // Add Kotlin Gradle plugin with the updated version
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.22")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.0")
     }
 }
 

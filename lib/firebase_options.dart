@@ -3,6 +3,15 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -11,25 +20,26 @@ class DefaultFirebaseOptions {
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
+
       case TargetPlatform.iOS:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for iOS - '
+          'you can add it manually',
         );
       case TargetPlatform.macOS:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for macOS - '
+          'you can add it manually',
         );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can add it manually',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'you can add it manually',
         );
       default:
         throw UnsupportedError(
@@ -39,20 +49,24 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDmRVEcWdRmrCyUTi3AZ2RsjHYBRFr2zmk',
-    appId: '1:457835886375:web:63c52fd3e41b68fd8e9b02',
-    messagingSenderId: '457835886375',
-    projectId: 'chatapp-6539d',
-    authDomain: 'chatapp-6539d.firebaseapp.com',
-    storageBucket: 'chatapp-6539d.firebasestorage.app',
-    measurementId: 'G-R11NLZ08C4',
+    apiKey: "AIzaSyDmRVEcWdRmrCyUTi3AZ2RsjHYBRFr2zmk",
+    authDomain: "chatapp-6539d.firebaseapp.com",
+    projectId: "chatapp-6539d",
+    storageBucket: "chatapp-6539d.firebasestorage.app",
+    messagingSenderId: "457835886375",
+    appId: "1:457835886375:web:63c52fd3e41b68fd8e9b02",
+    measurementId: "G-R11NLZ08C4",
+    databaseURL:
+        "https://chatapp-6539d-default-rtdb.europe-west1.firebasedatabase.app",
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAA9EAxrRZ2M_uMQDHA55TaTxOLMZuKOCQ',
-    appId: '1:457835886375:android:162beac296604b908e9b02',
-    messagingSenderId: '457835886375',
-    projectId: 'chatapp-6539d',
-    storageBucket: 'chatapp-6539d.firebasestorage.app',
+    apiKey: "AIzaSyDmRVEcWdRmrCyUTi3AZ2RsjHYBRFr2zmk",
+    appId: "1:457835886375:web:63c52fd3e41b68fd8e9b02",
+    messagingSenderId: "457835886375",
+    projectId: "chatapp-6539d",
+    storageBucket: "chatapp-6539d.firebasestorage.app",
+    databaseURL:
+        "https://chatapp-6539d-default-rtdb.europe-west1.firebasedatabase.app",
   );
 }

@@ -26,9 +26,8 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.chat_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // Set minSdk to 23 as required by Firebase Auth
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -48,8 +47,8 @@ flutter {
 }
 
 dependencies {
-    // Update the BOM version to match the Flutter packages
-    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    // Update the BOM version to a more recent version compatible with Kotlin 2.0
+    implementation(platform("com.google.firebase:firebase-bom:32.8.0"))
     
     // Use the non-ktx versions to reduce Kotlin version dependencies
     implementation("com.google.firebase:firebase-analytics")
