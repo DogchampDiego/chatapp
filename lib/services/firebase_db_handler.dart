@@ -22,27 +22,58 @@ class FirebaseDbHandler {
     return _database.ref(path);
   }
 
-  // Save a message to the database
-  Future<void> saveMessage(String text) async {
-    final messagesRef = _database.ref('messages');
+  // Get list of all chats
+  Stream<DatabaseEvent> getChats() {
+    return _database.ref('chats').onValue;
+  }
+
+  // Get messages for a specific chat
+  Stream<DatabaseEvent> getChatMessages(String chatId) {
+    return _database
+        .ref('chat_messages/$chatId')
+        .orderByChild('timestamp')
+        .onValue;
+  }
+
+  // Create a new chat
+  Future<String> createChat(String topic) async {
+    final chatsRef = _database.ref('chats');
+    final newChatRef = chatsRef.push();
+
+    await newChatRef.set({'topic': topic, 'createdAt': ServerValue.timestamp});
+
+    return newChatRef.key ?? '';
+  }
+
+  // Save a message to a specific chat
+  Future<void> saveChatMessage(
+    String chatId,
+    String senderName,
+    String text,
+  ) async {
+    final messagesRef = _database.ref('chat_messages/$chatId');
     final newMessageRef = messagesRef.push();
 
     await newMessageRef.set({
       'text': text,
-      'userId': _generateUserId(),
+      'sender': senderName,
       'platform': kIsWeb ? 'web' : 'android',
       'timestamp': ServerValue.timestamp,
     });
   }
 
   // Delete a specific message
-  Future<void> deleteMessage(String messageId) async {
-    await _database.ref('messages/$messageId').remove();
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    await _database.ref('chat_messages/$chatId/$messageId').remove();
   }
 
-  // Delete all messages (use with caution)
-  Future<void> deleteAllMessages() async {
-    await _database.ref('messages').remove();
+  // Delete a specific chat and all its messages
+  Future<void> deleteChat(String chatId) async {
+    // Delete the chat
+    await _database.ref('chats/$chatId').remove();
+
+    // Delete all messages for this chat
+    await _database.ref('chat_messages/$chatId').remove();
   }
 
   // Generate a simple user ID based on timestamp

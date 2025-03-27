@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import '../services/firebase_db_handler.dart';
-import '../widgets/message_tile.dart';
+import 'chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.title});
@@ -14,65 +14,44 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final TextEditingController _textController = TextEditingController();
+  final TextEditingController _chatTopicController = TextEditingController();
   final FirebaseDbHandler _dbHandler = FirebaseDbHandler();
-  late final DatabaseReference _messagesRef;
 
   @override
   void initState() {
     super.initState();
-    _messagesRef = _dbHandler.getReference('messages');
   }
 
   @override
   void dispose() {
-    _textController.dispose();
+    _chatTopicController.dispose();
     super.dispose();
   }
 
-  void _saveMessage() async {
-    if (_textController.text.isEmpty) return;
+  void _createNewChat() async {
+    if (_chatTopicController.text.isEmpty) {
+      _showSnackBar('Please enter a chat topic');
+      return;
+    }
 
     try {
-      await _dbHandler.saveMessage(_textController.text);
-      _textController.clear();
-      _showSnackBar('Message sent');
-    } catch (e) {
-      String errorMsg = e.toString();
+      final chatId = await _dbHandler.createChat(_chatTopicController.text);
+      _chatTopicController.clear();
 
-      // Provide helpful information for web users encountering permission issues
-      if (kIsWeb && errorMsg.contains('permission-denied')) {
-        _showPermissionErrorDialog();
-      } else {
-        _showSnackBar('Error: $errorMsg');
+      if (chatId.isNotEmpty) {
+        _showSnackBar('Chat created successfully');
       }
+    } catch (e) {
+      _showSnackBar('Error creating chat: ${e.toString()}');
     }
   }
 
-  void _showPermissionErrorDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Firebase Permission Error'),
-            content: const Text(
-              'Your Firebase Database rules need to be updated to allow web access. '
-              'Go to the Firebase Console, open Realtime Database, and update the rules to:\n\n'
-              '{\n'
-              '  "rules": {\n'
-              '    ".read": true,\n'
-              '    ".write": true\n'
-              '  }\n'
-              '}\n\n'
-              'Note: These rules allow public access and should be restricted in production.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
+  void _openChat(String chatId, String topic) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(chatId: chatId, topic: topic),
+      ),
     );
   }
 
@@ -100,63 +79,107 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: Column(
-        children: [_buildMessageInput(), Expanded(child: _buildMessageList())],
+        children: [
+          _buildNewChatInput(),
+          const Divider(thickness: 1),
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Text(
+              'Available Chats',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ),
+          Expanded(child: _buildChatsList()),
+        ],
       ),
     );
   }
 
-  Widget _buildMessageInput() {
+  Widget _buildNewChatInput() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
-      child: TextField(
-        controller: _textController,
-        decoration: InputDecoration(
-          labelText: 'Enter message',
-          border: const OutlineInputBorder(),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: _saveMessage,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Create New Chat',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-        ),
-        onSubmitted: (_) => _saveMessage(),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _chatTopicController,
+                  decoration: const InputDecoration(
+                    labelText: 'Chat Topic',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: _createNewChat,
+                child: const Text('Create'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildMessageList() {
+  Widget _buildChatsList() {
     return StreamBuilder(
-      stream: _messagesRef.orderByChild('timestamp').onValue,
+      stream: _dbHandler.getChats(),
       builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 
         if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-          return const Center(child: Text('No messages yet'));
+          return const Center(
+            child: Text('No chats available. Create a new one!'),
+          );
         }
 
         try {
-          // Convert data to list and sort
-          final messagesMap = Map<dynamic, dynamic>.from(
+          final chatsMap = Map<dynamic, dynamic>.from(
             snapshot.data!.snapshot.value as Map,
           );
-          final messagesList = messagesMap.entries.toList();
-          messagesList.sort(
-            (a, b) => (b.value['timestamp'] ?? 0).compareTo(
-              a.value['timestamp'] ?? 0,
+
+          if (chatsMap.isEmpty) {
+            return const Center(
+              child: Text('No chats available. Create a new one!'),
+            );
+          }
+
+          final chatsList = chatsMap.entries.toList();
+
+          // Sort chats by creation time (newest first)
+          chatsList.sort(
+            (a, b) => (b.value['createdAt'] ?? 0).compareTo(
+              a.value['createdAt'] ?? 0,
             ),
           );
 
           return ListView.builder(
-            itemCount: messagesList.length,
-            itemBuilder:
-                (context, index) => MessageTile(
-                  message: messagesList[index].value,
-                  currentPlatform: kIsWeb ? 'web' : 'android',
-                ),
+            itemCount: chatsList.length,
+            itemBuilder: (context, index) {
+              final chatId = chatsList[index].key as String;
+              final chatData = chatsList[index].value as Map<dynamic, dynamic>;
+              final topic = chatData['topic'] as String? ?? 'Unnamed Chat';
+
+              return ListTile(
+                title: Text(topic),
+                leading: const Icon(Icons.chat),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () => _openChat(chatId, topic),
+              );
+            },
           );
         } catch (e) {
-          return Center(child: Text('Error loading messages: $e'));
+          return Center(child: Text('Error loading chats: $e'));
         }
       },
     );
