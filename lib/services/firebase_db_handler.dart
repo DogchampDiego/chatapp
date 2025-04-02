@@ -27,14 +27,6 @@ class FirebaseDbHandler {
     return _database.ref('chats').onValue;
   }
 
-  // Get messages for a specific chat
-  Stream<DatabaseEvent> getChatMessages(String chatId) {
-    return _database
-        .ref('chat_messages/$chatId')
-        .orderByChild('timestamp')
-        .onValue;
-  }
-
   // Create a new chat
   Future<String> createChat(String topic) async {
     final chatsRef = _database.ref('chats');
@@ -43,6 +35,14 @@ class FirebaseDbHandler {
     await newChatRef.set({'topic': topic, 'createdAt': ServerValue.timestamp});
 
     return newChatRef.key ?? '';
+  }
+
+  // Get messages for a specific chat
+  Stream<DatabaseEvent> getChatMessages(String chatId) {
+    return _database
+        .ref('chat_messages/$chatId')
+        .orderByChild('timestamp')
+        .onValue;
   }
 
   // Save a message to a specific chat
@@ -60,19 +60,5 @@ class FirebaseDbHandler {
       'platform': kIsWeb ? 'web' : 'android',
       'timestamp': ServerValue.timestamp,
     });
-  }
-
-  // Delete a specific message
-  Future<void> deleteMessage(String chatId, String messageId) async {
-    await _database.ref('chat_messages/$chatId/$messageId').remove();
-  }
-
-  // Delete a specific chat and all its messages
-  Future<void> deleteChat(String chatId) async {
-    // Delete the chat
-    await _database.ref('chats/$chatId').remove();
-
-    // Delete all messages for this chat
-    await _database.ref('chat_messages/$chatId').remove();
   }
 }
