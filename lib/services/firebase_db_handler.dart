@@ -75,9 +75,4 @@ class FirebaseDbHandler {
     // Delete all messages for this chat
     await _database.ref('chat_messages/$chatId').remove();
   }
-
-  // Generate a simple user ID based on timestamp
-  String _generateUserId() {
-    return DateTime.now().millisecondsSinceEpoch.toString().substring(7);
-  }
 }

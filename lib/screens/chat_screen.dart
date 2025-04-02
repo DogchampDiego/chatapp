@@ -131,12 +131,6 @@ class _ChatScreenState extends State<ChatScreen> {
             snapshot.data!.snapshot.value as Map,
           );
 
-          if (messagesMap.isEmpty) {
-            return const Center(
-              child: Text('No messages yet. Start the conversation!'),
-            );
-          }
-
           final messagesList = messagesMap.entries.toList();
 
           // Sort messages by timestamp (newest last)
@@ -208,7 +202,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 ),
                               ],
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),

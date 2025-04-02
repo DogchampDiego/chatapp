@@ -24,7 +24,10 @@ class MessageTile extends StatelessWidget {
     return ListTile(
       title: Text(message['text'] ?? 'No text'),
       subtitle: Text('User: $shortUserId ($platform)'),
-      tileColor: isFromCurrentPlatform ? Colors.blue.withOpacity(0.1) : null,
+      tileColor:
+          isFromCurrentPlatform
+              ? const Color.fromRGBO(33, 150, 243, 0.1)
+              : null,
       trailing:
           isFromCurrentPlatform
               ? Icon(
