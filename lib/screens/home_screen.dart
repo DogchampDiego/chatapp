@@ -15,6 +15,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _chatTopicController = TextEditingController();
+  final TextEditingController _creatorController = TextEditingController();
   final FirebaseDbHandler _dbHandler = FirebaseDbHandler();
 
   @override
@@ -25,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _chatTopicController.dispose();
+    _creatorController.dispose();
     super.dispose();
   }
 
@@ -34,8 +36,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    if (_creatorController.text.isEmpty) {
+      _showSnackBar('Please enter creator name');
+      return;
+    }
+
     try {
-      final chatId = await _dbHandler.createChat(_chatTopicController.text);
+      final chatId = await _dbHandler.createChat(
+        _chatTopicController.text,
+        _creatorController.text,
+      );
       _chatTopicController.clear();
 
       if (chatId.isNotEmpty) {
@@ -106,23 +116,27 @@ class _HomeScreenState extends State<HomeScreen> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _chatTopicController,
-                  decoration: const InputDecoration(
-                    labelText: 'Chat Topic',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              ElevatedButton(
-                onPressed: _createNewChat,
-                child: const Text('Create'),
-              ),
-            ],
+          TextField(
+            controller: _chatTopicController,
+            decoration: const InputDecoration(
+              labelText: 'Chat Topic',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _creatorController,
+            decoration: const InputDecoration(
+              labelText: 'Creator',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: ElevatedButton(
+              onPressed: _createNewChat,
+              child: const Text('Create'),
+            ),
           ),
         ],
       ),
@@ -169,9 +183,11 @@ class _HomeScreenState extends State<HomeScreen> {
               final chatId = chatsList[index].key as String;
               final chatData = chatsList[index].value as Map<dynamic, dynamic>;
               final topic = chatData['topic'] as String? ?? 'Unnamed Chat';
+              final creator = chatData['creator'] as String? ?? 'Unknown';
 
               return ListTile(
                 title: Text(topic),
+                subtitle: Text('Creator: $creator'),
                 leading: const Icon(Icons.chat),
                 trailing: const Icon(Icons.arrow_forward_ios),
                 onTap: () => _openChat(chatId, topic),

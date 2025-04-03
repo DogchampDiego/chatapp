@@ -28,11 +28,15 @@ class FirebaseDbHandler {
   }
 
   // Create a new chat
-  Future<String> createChat(String topic) async {
+  Future<String> createChat(String topic, String creator) async {
     final chatsRef = _database.ref('chats');
     final newChatRef = chatsRef.push();
 
-    await newChatRef.set({'topic': topic, 'createdAt': ServerValue.timestamp});
+    await newChatRef.set({
+      'topic': topic,
+      'creator': creator,
+      'createdAt': ServerValue.timestamp,
+    });
 
     return newChatRef.key ?? '';
   }
